@@ -44,7 +44,7 @@
               </h2>
               <a
                 class="dummy-media-object"
-                :href="link+book.name+'.epub'"
+                :href="link+book.url_name+'.epub'"
                 v-for="(book, index) in wantedBooks"
                 v-bind:key="index"
               >
@@ -116,7 +116,8 @@
                 .match(new RegExp("(?<=>)(.*)(?=.epub<)", "igm"))
                 .map(bookName => ({
                   name: bookName,
-                  tr_name: slugify(bookName)
+                  tr_name: slugify(bookName),
+                  url_name: bookName.replace(/#/g, "%23")
                 })))
           );
       },
