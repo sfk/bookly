@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+    <link rel="shortcut icon" />
+    <link
+      href="http://fonts.googleapis.com/css?family=Raleway:100,700,800"
+      rel="stylesheet"
+      type="text/css"
+    />
+    <link
+      rel="stylesheet"
+      type="text/css"
+      href="fonts/font-awesome-4.2.0/css/font-awesome.min.css"
+    />
+    <link rel="stylesheet" type="text/css" href="css/normalize.css" />
+    <link rel="stylesheet" type="text/css" href="css/demo.css" />
+    <link rel="stylesheet" type="text/css" href="css/component.css" />
+
+    <script src="js/classie.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vue"></script>
+    <title>📚📚📚📚📚📚📚📚📚📚📚</title>
+  </head>
+  <body>
+    <div id="app">
+      <div class="container">
+        <aside class="sidebar clearfix"></aside>
+        <div id="morphsearch" class="morphsearch">
+          <form class="morphsearch-form">
+            <input
+              class="morphsearch-input"
+              type="search"
+              v-model="searchText"
+              placeholder="Kitap/Yazar..."
+            />
+            <button class="morphsearch-submit" type="submit">Ara</button>
+          </form>
+          <div class="morphsearch-content">
+            <div class="dummy-column">
+              <h2 v-if="searchText">
+                {{ wantedBooks.length }} adet kitap bulundu
+              </h2>
+              <a
+                class="dummy-media-object"
+                :href="link+book.name+'.epub'"
+                v-for="(book, index) in wantedBooks"
+                v-bind:key="index"
+              >
+                <b>📕</b> &nbsp;
+                <h3>{{ book.name }}</h3>
+              </a>
+            </div>
+          </div>
+          <!-- /morphsearch-content -->
+          <span class="morphsearch-close" v-on:click="searchText = ''"></span>
+        </div>
+        <!-- /morphsearch -->
+        <header class="codrops-header">
+          <h1>
+            <br /><br /><br /><b>📚 {{ books.length }}</b
+            ><br /><span style="color:yellow"
+              >&nbsp;İndir ve okumaya başla.<br />&nbsp;
+              Şimdi.&#9889;&#9994;</span
+            >
+          </h1>
+        </header>
+        <div class="overlay"></div>
+      </div>
+      <!-- /container -->
+    </div>
+  </body>
+
+  <script>
+    var app = new Vue({
+      el: "#app",
+      data() {
+        return {
+          link:
+            "https://ipfs.io/ipfs/QmUC4KA1Vi3DizRrTj9Z4uyrL6a7zjS7wNnvR5iNzYALSh/",
+          books: [],
+          searchText: "",
+          queryText: ""
+        };
+      },
+      computed: {
+        wantedBooks: function() {
+          if (this.books === "") return [];
+
+          if (this.searchText === "") return this.books;
+
+          return this.books.filter(book =>
+            book.tr_name.toLowerCase().includes(this.queryText.toLowerCase())
+          );
+        }
+      },
+
+      watch: {
+        searchText: function(newSearchText) {
+          this.queryText = this.slugify(newSearchText);
+        }
+      },
+
+      created() {
+        const slugify = this.slugify;
+        fetch(this.link)
+          .then(resp => {
+            return resp.text();
+          })
+          .then(
+            response =>
+              (this.books = response
+                .replace(/&amp;/g, "&")
+                .replace(/&#39;/g, "'")
+                .match(new RegExp("(?<=>)(.*)(?=.epub<)", "igm"))
+                .map(bookName => ({
+                  name: bookName,
+                  tr_name: slugify(bookName)
+                })))
+          );
+      },
+      methods: {
+        /*
+         * slugify function
+         * author Murat Corlu
+         * from https://gist.github.com/muratcorlu/3698167
+         */
+        slugify: function(text) {
+          var trMap = { çÇ: "c", ğĞ: "g", şŞ: "s", üÜ: "u", ıİ: "i", öÖ: "o" };
+          for (var key in trMap) {
+            text = text.replace(new RegExp("[" + key + "]", "g"), trMap[key]);
+          }
+          return text
+            .replace(/[^-a-zA-Z0-9\s]+/gi, "") // remove non-alphanumeric chars
+            .toLowerCase();
+        }
+      }
+    });
+  </script>
+  <script>
+    (function() {
+      var morphSearch = document.getElementById("morphsearch"),
+        input = morphSearch.querySelector("input.morphsearch-input"),
+        ctrlClose = morphSearch.querySelector("span.morphsearch-close"),
+        isOpen = (isAnimating = false),
+        // show/hide search area
+        toggleSearch = function(evt) {
+          // return if open and the input gets focused
+          if (evt.type.toLowerCase() === "focus" && isOpen) return false;
+
+          var offsets = morphsearch.getBoundingClientRect();
+          if (isOpen) {
+            classie.remove(morphSearch, "open");
+
+            // trick to hide input text once the search overlay closes
+            // todo: hardcoded times, should be done after transition ends
+            if (input.value !== "") {
+              setTimeout(function() {
+                classie.add(morphSearch, "hideInput");
+                setTimeout(function() {
+                  classie.remove(morphSearch, "hideInput");
+                  input.value = "";
+                }, 300);
+              }, 500);
+            }
+
+            input.blur();
+          } else {
+            classie.add(morphSearch, "open");
+          }
+          isOpen = !isOpen;
+        };
+
+      // events
+      input.addEventListener("focus", toggleSearch);
+      ctrlClose.addEventListener("click", toggleSearch);
+      // esc key closes search overlay
+      // keyboard navigation events
+      document.addEventListener("keydown", function(ev) {
+        var keyCode = ev.keyCode || ev.which;
+        if (keyCode === 27 && isOpen) {
+          toggleSearch(ev);
+        }
+      });
+
+      /***** for demo purposes only: don't allow to submit the form *****/
+      morphSearch
+        .querySelector('button[type="submit"]')
+        .addEventListener("click", function(ev) {
+          ev.preventDefault();
+        });
+    })();
+  </script>
+</html>
